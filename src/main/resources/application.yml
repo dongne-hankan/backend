@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: dongne-hankan
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dongne_hankan?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:dongne}
+    password: ${DB_PASSWORD:dongne}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-token-minutes: 30
+    refresh-token-days: 14
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID:}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
