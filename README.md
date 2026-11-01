@@ -10,7 +10,7 @@ Java 21 · Spring Boot 4.1 · Spring Data JPA · Spring Security · Flyway · My
 
 ```bash
 ./gradlew bootRun                                         # H2와 샘플 데이터로 실행 (local 프로필)
-docker compose up -d && SPRING_PROFILES_ACTIVE=default ./gradlew bootRun   # MySQL로 실행
+SPRING_PROFILES_ACTIVE=default ./gradlew bootRun          # MySQL로 실행 (docker compose up -d 또는 Homebrew mysql@8.4)
 ./gradlew test                                            # H2로 실행
 ```
 
