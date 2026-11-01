@@ -22,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.sixteez.dongnehankan.auth.service.TokenProvider;
 import com.sixteez.dongnehankan.global.exception.ErrorCode;
 import com.sixteez.dongnehankan.global.exception.ErrorResponse;
+import com.sixteez.dongnehankan.user.repository.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,9 +35,12 @@ public class SecurityConfig {
 
 	private final TokenProvider tokenProvider;
 
-	public SecurityConfig(ObjectMapper objectMapper, TokenProvider tokenProvider) {
+	private final UserRepository userRepository;
+
+	public SecurityConfig(ObjectMapper objectMapper, TokenProvider tokenProvider, UserRepository userRepository) {
 		this.objectMapper = objectMapper;
 		this.tokenProvider = tokenProvider;
+		this.userRepository = userRepository;
 	}
 
 	@Bean
@@ -58,7 +62,8 @@ public class SecurityConfig {
 				.hasRole("ADMIN")
 				.anyRequest()
 				.authenticated())
-			.addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(new JwtAuthenticationFilter(tokenProvider, userRepository),
+					UsernamePasswordAuthenticationFilter.class)
 			.exceptionHandling(handler -> handler
 				.authenticationEntryPoint((request, response, e) -> writeError(response, authError(request)))
 				.accessDeniedHandler((request, response, e) -> writeError(response, ErrorCode.FORBIDDEN)))

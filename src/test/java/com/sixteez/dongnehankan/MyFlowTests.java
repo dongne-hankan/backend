@@ -169,7 +169,7 @@ class MyFlowTests {
 
 		authed(get(HOUR_WALK_IN_SUSEONG)).andExpect(jsonPath("$.data.courses[0].courseId").value(1))
 			.andExpect(jsonPath("$.data.personalization.applied").value(true))
-			.andExpect(jsonPath("$.data.personalization.message").isNotEmpty());
+			.andExpect(jsonPath("$.data.personalization.message").value("'천천히 걷기'를 좋아하셔서 먼저 보여드려요"));
 	}
 
 	@Test

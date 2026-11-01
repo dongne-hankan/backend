@@ -188,6 +188,12 @@ class AuthFlowTests {
 
 		assertThat(userRepository.findByKakaoId(kakaoId)).isEmpty();
 		refresh(refreshToken).andExpect(status().isUnauthorized());
+
+		mockMvc.perform(get("/api/my/saved-courses").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+		mockMvc.perform(get("/api/find/options").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+			.andExpect(status().isOk());
 	}
 
 	@Test
