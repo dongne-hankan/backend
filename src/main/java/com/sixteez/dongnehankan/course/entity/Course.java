@@ -1,0 +1,65 @@
+package com.sixteez.dongnehankan.course.entity;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Course {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "course_id")
+	private Long id;
+
+	private String courseKey;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "region_id")
+	private Region region;
+
+	private String name;
+
+	private String intro;
+
+	private String transport;
+
+	private String thumbnailUrl;
+
+	private int durationMinutes;
+
+	private boolean visible;
+
+	@ManyToMany
+	@JoinTable(name = "course_tag", joinColumns = @JoinColumn(name = "course_id"),
+			inverseJoinColumns = @JoinColumn(name = "tag_id"))
+	@OrderBy("sortOrder")
+	private Set<ExperienceTag> tags = new LinkedHashSet<>();
+
+	@OneToMany(mappedBy = "course")
+	@OrderBy("stopOrder")
+	private List<CourseStop> stops = new ArrayList<>();
+
+	public boolean hasTag(Long tagId) {
+		return tags.stream().anyMatch(tag -> tag.getId().equals(tagId));
+	}
+}

@@ -48,7 +48,7 @@ CREATE TABLE user_preference (
     home_region_id       BIGINT      NULL COMMENT '주로 지내는 지역 ID',
     last_region_id       BIGINT      NULL COMMENT '마지막 찾기 지역 ID',
     last_tag_id          BIGINT      NULL COMMENT '마지막 찾기 경험 태그 ID',
-    last_duration        VARCHAR(10) NULL COMMENT '마지막 찾기 시간 MIN_30 / HOUR_1 / HOUR_2 / HALF_DAY',
+    last_duration        VARCHAR(10) NULL COMMENT '마지막 찾기 시간 MIN_30 / HOUR_1',
     onboarding_completed TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '온보딩 완료(건너뛰기 포함) 여부',
     updated_at           DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '수정일',
     PRIMARY KEY (user_id)
@@ -69,6 +69,7 @@ CREATE TABLE place (
     lng            DECIMAL(10,7) NOT NULL COMMENT '경도',
     checked_on     DATE          NOT NULL COMMENT '정보 확인일',
     time_sensitive TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '영업시간 확인 필요 여부',
+    source_url     VARCHAR(500)  NULL COMMENT '공식 안내 링크',
     visible        TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '공개 여부 (처음엔 비공개)',
     hidden_reason  VARCHAR(100)  NULL COMMENT '숨김 사유 (폐업 등)',
     created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',

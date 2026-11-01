@@ -9,24 +9,24 @@ Java 21 · Spring Boot 4.1 · Spring Data JPA · Spring Security · Flyway · My
 ## 시작하기
 
 ```bash
-docker compose up -d   # 로컬 MySQL 실행
-./gradlew bootRun      # http://localhost:8080
-./gradlew test         # MySQL 없이 H2로 실행
+./gradlew bootRun                                         # H2와 샘플 데이터로 실행 (local 프로필)
+docker compose up -d && SPRING_PROFILES_ACTIVE=default ./gradlew bootRun   # MySQL로 실행
+./gradlew test                                            # H2로 실행
 ```
 
-스키마는 앱을 켤 때 Flyway가 `src/main/resources/db/migration`을 적용해 만듭니다. 환경 변수 목록은 `.env.example`을 참고하세요.
+스키마는 앱을 켤 때 Flyway가 `src/main/resources/db/migration`을 적용해 만듭니다. `db/dev`의 샘플 데이터는 local·test 프로필에만 들어가며, 주민 이야기는 가상 예시이고 좌표는 확인되지 않은 값입니다. 실행 전에 `.env.example`을 `.env`로 복사해 값을 채우세요. `.env`는 앱을 켤 때 자동으로 읽습니다.
 
 ## 폴더 구조
 
 ```text
 src/main/java/com/sixteez/dongnehankan
 ├── global     공통 설정(config), 예외(exception), 응답 형식(response)
-├── auth       카카오 로그인, 회원가입, 토큰 (Backend A)
-├── user       내 정보, 취향 설정 (Backend A)
-├── my         담은 코스, 느낌 기록, 나의 동네 한 칸 (Backend A)
-├── find       찾기 선택지, 추천 (Backend B)
-├── course     코스, 장소, 주민 이야기, 지역, 경험 태그 (Backend C)
-└── admin      콘텐츠 관리, 시드 데이터 (Backend C)
+├── auth       카카오 로그인, 회원가입, 토큰
+├── user       내 정보, 취향 설정
+├── my         담은 코스, 느낌 기록, 나의 동네 한 칸
+├── find       찾기 선택지, 추천
+├── course     코스, 장소, 주민 이야기, 지역, 경험 태그
+└── admin      콘텐츠 관리, 시드 데이터
 ```
 
 도메인은 API명세서의 분류(auth, user, find, course, my, admin)와 맞췄습니다. 각 도메인 안은 `controller`, `service`, `dto`, `entity`, `repository`로 나눕니다. 빈 폴더를 유지하는 `.gitkeep`은 파일을 추가할 때 지워도 됩니다.
@@ -45,9 +45,8 @@ src/main/java/com/sixteez/dongnehankan
 
 ## 남은 일
 
-- JWT 인증 필터 (`SecurityConfig`의 TODO). 지금은 토큰을 해석하지 않아 회원 API가 모두 401을 반환합니다.
-- 카카오 로그인 연동
-- 각 도메인의 엔티티와 API
+- 온보딩 취향 설정, 조건 기억, 관리자 API (시드 데이터 입력 포함)
+- 회원 탈퇴 때 카카오 연결 끊기 (Admin 키 필요)
 
 ## 문서
 

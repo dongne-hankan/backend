@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: dongne-hankan
   datasource:
@@ -7,6 +9,8 @@ spring:
     password: ${DB_PASSWORD:dongne}
   jpa:
     open-in-view: false
+    properties:
+      hibernate.default_batch_fetch_size: 100
     hibernate:
       ddl-auto: validate
   flyway:
@@ -22,3 +26,4 @@ app:
   kakao:
     client-id: ${KAKAO_CLIENT_ID:}
     client-secret: ${KAKAO_CLIENT_SECRET:}
+    redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:5173/oauth/kakao}

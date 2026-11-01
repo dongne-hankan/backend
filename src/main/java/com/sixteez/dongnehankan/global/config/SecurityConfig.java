@@ -14,13 +14,16 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.sixteez.dongnehankan.auth.service.TokenProvider;
 import com.sixteez.dongnehankan.global.exception.ErrorCode;
 import com.sixteez.dongnehankan.global.exception.ErrorResponse;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,11 +32,13 @@ public class SecurityConfig {
 
 	private final ObjectMapper objectMapper;
 
-	public SecurityConfig(ObjectMapper objectMapper) {
+	private final TokenProvider tokenProvider;
+
+	public SecurityConfig(ObjectMapper objectMapper, TokenProvider tokenProvider) {
 		this.objectMapper = objectMapper;
+		this.tokenProvider = tokenProvider;
 	}
 
-	// TODO(Backend A): JWT 인증 필터를 추가한다. 비회원도 부르는 공개 API에서는 토큰이 없어도 통과시켜야 한다.
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http.csrf(AbstractHttpConfigurer::disable)
@@ -53,8 +58,9 @@ public class SecurityConfig {
 				.hasRole("ADMIN")
 				.anyRequest()
 				.authenticated())
+			.addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
 			.exceptionHandling(handler -> handler
-				.authenticationEntryPoint((request, response, e) -> writeError(response, ErrorCode.AUTH_REQUIRED))
+				.authenticationEntryPoint((request, response, e) -> writeError(response, authError(request)))
 				.accessDeniedHandler((request, response, e) -> writeError(response, ErrorCode.FORBIDDEN)))
 			.build();
 	}
@@ -69,6 +75,11 @@ public class SecurityConfig {
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/api/**", configuration);
 		return source;
+	}
+
+	private ErrorCode authError(HttpServletRequest request) {
+		return request.getAttribute(JwtAuthenticationFilter.ERROR_ATTRIBUTE) instanceof ErrorCode errorCode ? errorCode
+				: ErrorCode.AUTH_REQUIRED;
 	}
 
 	private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {

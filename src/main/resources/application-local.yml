@@ -1,0 +1,11 @@
+# Docker 없이 실행하는 로컬 개발용 프로필. 샘플 데이터는 앱을 끄면 사라진다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:dongne_hankan;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
