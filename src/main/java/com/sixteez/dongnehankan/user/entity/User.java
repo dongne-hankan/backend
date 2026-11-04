@@ -28,6 +28,10 @@ public class User {
 
 	private String kakaoId;
 
+	private String email;
+
+	private String passwordHash;
+
 	private String nickname;
 
 	private boolean isAdmin;
@@ -44,6 +48,21 @@ public class User {
 		this.kakaoId = kakaoId;
 		this.nickname = nickname;
 		this.privacyAgreedAt = privacyAgreedAt;
+	}
+
+	public static User withEmail(String email, String passwordHash, String nickname, LocalDateTime privacyAgreedAt) {
+		User user = new User(null, nickname, privacyAgreedAt);
+		user.email = email;
+		user.passwordHash = passwordHash;
+		return user;
+	}
+
+	public boolean hasPassword() {
+		return passwordHash != null;
+	}
+
+	public void changePasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
 	}
 
 	public void changeNickname(String nickname) {

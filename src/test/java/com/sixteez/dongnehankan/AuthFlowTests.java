@@ -3,7 +3,10 @@ package com.sixteez.dongnehankan;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -17,6 +20,7 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,10 +31,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
 import com.sixteez.dongnehankan.auth.service.KakaoClient;
 import com.sixteez.dongnehankan.auth.service.KakaoClient.KakaoProfile;
+import com.sixteez.dongnehankan.auth.service.PasswordResetMailer;
 import com.sixteez.dongnehankan.auth.service.TokenProvider;
 import com.sixteez.dongnehankan.global.exception.BusinessException;
 import com.sixteez.dongnehankan.global.exception.ErrorCode;
@@ -46,6 +52,8 @@ class AuthFlowTests {
 
 	private static final AtomicInteger KAKAO_IDS = new AtomicInteger(1000);
 
+	private static final String PASSWORD = "password-123";
+
 	@Autowired
 	private MockMvc mockMvc;
 
@@ -60,6 +68,9 @@ class AuthFlowTests {
 
 	@MockitoBean
 	private KakaoClient kakaoClient;
+
+	@MockitoBean
+	private PasswordResetMailer passwordResetMailer;
 
 	@Test
 	void newUserSignsUpThenLogsInAsExistingMember() throws Exception {
@@ -113,6 +124,98 @@ class AuthFlowTests {
 		mockMvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + signupToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+	}
+
+	@Test
+	void emailUserSignsUpThenLogsIn() throws Exception {
+		String email = nextEmail();
+		emailAvailability(email).andExpect(jsonPath("$.data.available").value(true));
+
+		MvcResult signup = emailSignup(email, PASSWORD, "성민", true).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.data.user.nickname").value("성민"))
+			.andExpect(jsonPath("$.data.user.isAdmin").value(false))
+			.andExpect(jsonPath("$.data.user.onboardingCompleted").value(false))
+			.andReturn();
+		String accessToken = readJson(signup, "$.data.accessToken");
+
+		mockMvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.nickname").value("성민"));
+
+		emailAvailability(email.toUpperCase()).andExpect(jsonPath("$.data.available").value(false));
+		assertThat(userRepository.findByEmail(email).orElseThrow().getPasswordHash()).isNotEqualTo(PASSWORD);
+
+		emailLogin(" " + email.toUpperCase() + " ", PASSWORD).andExpect(status().isOk())
+			.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+			.andExpect(jsonPath("$.data.user.nickname").value("성민"));
+	}
+
+	@Test
+	void duplicateEmailIsRejected() throws Exception {
+		String email = nextEmail();
+		emailSignup(email, PASSWORD, "성민", true).andExpect(status().isCreated());
+
+		emailSignup(email, PASSWORD, "다른사람", true).andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
+	}
+
+	@Test
+	void emailSignupRequiresPrivacyAgreement() throws Exception {
+		emailSignup(nextEmail(), PASSWORD, "성민", false).andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("PRIVACY_AGREEMENT_REQUIRED"));
+	}
+
+	@Test
+	void emailSignupValidatesInput() throws Exception {
+		emailSignup("not-an-email", PASSWORD, "성민", true).andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("email"));
+		emailSignup(nextEmail(), "short", "성민", true).andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("password"));
+		mockMvc.perform(get("/api/auth/email-availability").param("email", "not-an-email"))
+			.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void loginFailureDoesNotRevealWhichPartWasWrong() throws Exception {
+		String email = nextEmail();
+		emailSignup(email, PASSWORD, "성민", true);
+
+		String wrongPassword = emailLogin(email, "wrong-password").andExpect(status().isUnauthorized())
+			.andReturn()
+			.getResponse()
+			.getContentAsString(StandardCharsets.UTF_8);
+		String unknownEmail = emailLogin(nextEmail(), PASSWORD).andExpect(status().isUnauthorized())
+			.andReturn()
+			.getResponse()
+			.getContentAsString(StandardCharsets.UTF_8);
+
+		assertThat(wrongPassword).isEqualTo(unknownEmail).contains("LOGIN_FAILED");
+	}
+
+	@Test
+	void passwordResetReplacesPasswordAndRevokesRefreshTokens() throws Exception {
+		String email = nextEmail();
+		String oldRefresh = readJson(emailSignup(email, PASSWORD, "성민", true).andReturn(), "$.data.refreshToken");
+
+		requestReset(email.toUpperCase()).andExpect(status().isNoContent());
+		ArgumentCaptor<String> token = ArgumentCaptor.forClass(String.class);
+		verify(passwordResetMailer).send(eq(email), token.capture(), any());
+
+		confirmReset(token.getValue(), "new-password-123").andExpect(status().isNoContent());
+
+		refresh(oldRefresh).andExpect(status().isUnauthorized());
+		emailLogin(email, PASSWORD).andExpect(status().isUnauthorized());
+		emailLogin(email, "new-password-123").andExpect(status().isOk());
+
+		confirmReset(token.getValue(), "another-password").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("PASSWORD_RESET_TOKEN_INVALID"));
+	}
+
+	@Test
+	void passwordResetForUnknownEmailLooksTheSame() throws Exception {
+		requestReset(nextEmail()).andExpect(status().isNoContent());
+
+		verifyNoInteractions(passwordResetMailer);
 	}
 
 	@Test
@@ -241,6 +344,37 @@ class AuthFlowTests {
 	private org.springframework.test.web.servlet.ResultActions refresh(String refreshToken) throws Exception {
 		return mockMvc.perform(post("/api/auth/token/refresh").contentType(MediaType.APPLICATION_JSON)
 			.content("{\"refreshToken\":\"" + refreshToken + "\"}"));
+	}
+
+	private String nextEmail() {
+		return "user" + KAKAO_IDS.incrementAndGet() + "@example.com";
+	}
+
+	private ResultActions emailAvailability(String email) throws Exception {
+		return mockMvc.perform(get("/api/auth/email-availability").param("email", email)).andExpect(status().isOk());
+	}
+
+	private ResultActions emailSignup(String email, String password, String nickname, boolean agreed)
+			throws Exception {
+		return postJson("/api/auth/email/signup", "{\"email\":\"" + email + "\",\"password\":\"" + password
+				+ "\",\"nickname\":\"" + nickname + "\",\"privacyAgreed\":" + agreed + "}");
+	}
+
+	private ResultActions emailLogin(String email, String password) throws Exception {
+		return postJson("/api/auth/login", "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}");
+	}
+
+	private ResultActions requestReset(String email) throws Exception {
+		return postJson("/api/auth/password-reset/request", "{\"email\":\"" + email + "\"}");
+	}
+
+	private ResultActions confirmReset(String token, String newPassword) throws Exception {
+		return postJson("/api/auth/password-reset/confirm",
+				"{\"token\":\"" + token + "\",\"newPassword\":\"" + newPassword + "\"}");
+	}
+
+	private ResultActions postJson(String url, String body) throws Exception {
+		return mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(body));
 	}
 
 	private String readJson(MvcResult result, String path) throws Exception {

@@ -16,6 +16,8 @@ SPRING_PROFILES_ACTIVE=default ./gradlew bootRun          # MySQL로 실행 (doc
 
 스키마는 앱을 켤 때 Flyway가 `src/main/resources/db/migration`을 적용해 만듭니다. `db/dev`의 샘플 데이터는 local·test 프로필에만 들어가며, 주민 이야기는 가상 예시이고 좌표는 확인되지 않은 값입니다. 실행 전에 `.env.example`을 `.env`로 복사해 값을 채우세요. `.env`는 앱을 켤 때 자동으로 읽습니다.
 
+비밀번호 재설정 메일은 `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`으로 SMTP를 설정하면 발송합니다. `MAIL_HOST`가 비어 있으면 메일 대신 재설정 링크를 로그에 남깁니다(로컬 개발용). 링크 주소는 `PASSWORD_RESET_URL`(기본 `http://localhost:5173/password-reset`)입니다.
+
 ## 폴더 구조
 
 ```text
