@@ -10,7 +10,6 @@ import com.sixteez.dongnehankan.course.repository.ExperienceTagRepository;
 import com.sixteez.dongnehankan.find.dto.AiRecommendationResponse;
 import com.sixteez.dongnehankan.find.dto.DurationOption;
 import com.sixteez.dongnehankan.find.dto.RecommendationResponse;
-import com.sixteez.dongnehankan.find.dto.RecommendationResponse.Condition;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,16 +27,9 @@ public class AiRecommendationService {
 			List<Long> excludeCourseIds, Long userId) {
 		RecommendationResponse recommendation = recommendationService.recommend(regionId, tagId, duration,
 				excludeCourseIds, userId);
-		Condition applied = appliedCondition(recommendation);
-		String tagName = experienceTagRepository.findById(applied.tagId()).map(ExperienceTag::getName).orElse("");
-		Map<Long, String> reasons = aiReasonWriter.write(tagName, applied.duration(), recommendation.courses());
+		String tagName = experienceTagRepository.findById(tagId).map(ExperienceTag::getName).orElse("");
+		Map<Long, String> reasons = aiReasonWriter.write(tagName, duration, recommendation.courses());
 		return AiRecommendationResponse.of(recommendation, reasons);
 	}
 
-	private Condition appliedCondition(RecommendationResponse recommendation) {
-		if (recommendation.fallback() != null && recommendation.fallback().appliedCondition() != null) {
-			return recommendation.fallback().appliedCondition();
-		}
-		return recommendation.condition();
-	}
 }
