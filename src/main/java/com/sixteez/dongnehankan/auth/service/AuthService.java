@@ -2,7 +2,9 @@ package com.sixteez.dongnehankan.auth.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Locale;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +12,9 @@ import com.sixteez.dongnehankan.auth.dto.AuthUser;
 import com.sixteez.dongnehankan.auth.dto.AuthorizeUrlResponse;
 import com.sixteez.dongnehankan.auth.dto.KakaoLoginRequest;
 import com.sixteez.dongnehankan.auth.dto.KakaoLoginResponse;
+import com.sixteez.dongnehankan.auth.dto.LocalSignupRequest;
+import com.sixteez.dongnehankan.auth.dto.LoginIdAvailabilityResponse;
+import com.sixteez.dongnehankan.auth.dto.LoginRequest;
 import com.sixteez.dongnehankan.auth.dto.SignupRequest;
 import com.sixteez.dongnehankan.auth.dto.TokenResponse;
 import com.sixteez.dongnehankan.auth.entity.RefreshToken;
@@ -35,9 +40,38 @@ public class AuthService {
 
 	private final TokenProvider tokenProvider;
 
+	private final PasswordEncoder passwordEncoder;
+
 	private final UserRepository userRepository;
 
 	private final RefreshTokenRepository refreshTokenRepository;
+
+	@Transactional(readOnly = true)
+	public LoginIdAvailabilityResponse loginIdAvailability(String loginId) {
+		return new LoginIdAvailabilityResponse(!userRepository.existsByLoginId(normalize(loginId)));
+	}
+
+	@Transactional
+	public TokenResponse signupLocal(LocalSignupRequest request) {
+		if (!request.privacyAgreed()) {
+			throw new BusinessException(ErrorCode.PRIVACY_AGREEMENT_REQUIRED);
+		}
+		String loginId = normalize(request.loginId());
+		if (userRepository.existsByLoginId(loginId)) {
+			throw new BusinessException(ErrorCode.LOGIN_ID_ALREADY_EXISTS);
+		}
+		User user = userRepository.save(User.withLoginId(loginId, passwordEncoder.encode(request.password()),
+				request.nickname().strip(), LocalDateTime.now()));
+		return issueTokens(user);
+	}
+
+	@Transactional
+	public TokenResponse login(LoginRequest request) {
+		User user = userRepository.findByLoginId(normalize(request.loginId()))
+			.filter(found -> found.hasPassword() && passwordEncoder.matches(request.password(), found.getPasswordHash()))
+			.orElseThrow(() -> new BusinessException(ErrorCode.LOGIN_FAILED));
+		return issueTokens(user);
+	}
 
 	public AuthorizeUrlResponse authorizeUrl() {
 		String state = tokenProvider.createRandomToken();
@@ -92,6 +126,10 @@ public class AuthService {
 		boolean onboardingCompleted = userRepository.countCompletedOnboarding(user.getId()) > 0;
 		return new TokenResponse(tokenProvider.createAccessToken(user.getId(), user.isAdmin()), refreshToken,
 				new AuthUser(user.getId(), user.getNickname(), user.isAdmin(), onboardingCompleted));
+	}
+
+	private String normalize(String loginId) {
+		return loginId.strip().toLowerCase(Locale.ROOT);
 	}
 
 	private String nicknameFor(String requested, String kakaoNickname) {

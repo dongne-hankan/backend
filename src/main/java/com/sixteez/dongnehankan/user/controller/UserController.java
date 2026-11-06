@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sixteez.dongnehankan.global.response.ApiResponse;
+import com.sixteez.dongnehankan.user.dto.ChangePasswordRequest;
 import com.sixteez.dongnehankan.user.dto.MyInfoResponse;
 import com.sixteez.dongnehankan.user.dto.UpdateNicknameRequest;
 import com.sixteez.dongnehankan.user.service.UserService;
@@ -34,6 +35,13 @@ public class UserController {
 	public ApiResponse<MyInfoResponse> changeNickname(@AuthenticationPrincipal Long userId,
 			@Valid @RequestBody UpdateNicknameRequest request) {
 		return ApiResponse.of(userService.changeNickname(userId, request.nickname()));
+	}
+
+	@PatchMapping("/password")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void changePassword(@AuthenticationPrincipal Long userId,
+			@Valid @RequestBody ChangePasswordRequest request) {
+		userService.changePassword(userId, request.currentPassword(), request.newPassword());
 	}
 
 	@DeleteMapping
