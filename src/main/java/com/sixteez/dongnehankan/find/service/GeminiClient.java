@@ -1,11 +1,12 @@
 package com.sixteez.dongnehankan.find.service;
 
-import java.time.Duration;
+import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -43,9 +44,11 @@ public class GeminiClient {
 			@Value("${GEMINI_MODEL:gemini-3.1-flash-lite}") String model,
 			@Value("${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}") String baseUrl,
 			@Value("${GEMINI_MAX_CONCURRENT_REQUESTS:2}") int maxConcurrentRequests,
-			@Value("${GEMINI_MAX_OUTPUT_TOKENS:2048}") int maxOutputTokens) {
-		this(RestClient.builder().requestFactory(requestFactory()), apiKey, model, baseUrl, maxConcurrentRequests,
-				maxOutputTokens);
+			@Value("${GEMINI_MAX_OUTPUT_TOKENS:2048}") int maxOutputTokens,
+			@Value("${GEMINI_CONNECT_TIMEOUT_MS:1000}") int connectTimeoutMillis,
+			@Value("${GEMINI_READ_TIMEOUT_MS:3000}") int readTimeoutMillis) {
+		this(RestClient.builder().requestFactory(requestFactory(connectTimeoutMillis, readTimeoutMillis)), apiKey,
+				model, baseUrl, maxConcurrentRequests, maxOutputTokens);
 	}
 
 	GeminiClient(RestClient.Builder builder, String apiKey, String model, String baseUrl) {
@@ -64,10 +67,13 @@ public class GeminiClient {
 		this.maxOutputTokens = maxOutputTokens;
 	}
 
-	private static SimpleClientHttpRequestFactory requestFactory() {
+	private static SimpleClientHttpRequestFactory requestFactory(int connectTimeoutMillis, int readTimeoutMillis) {
+		if (connectTimeoutMillis < 1 || readTimeoutMillis < 1) {
+			throw new IllegalArgumentException("Gemini 연결·읽기 제한은 양수여야 합니다.");
+		}
 		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-		requestFactory.setConnectTimeout(Duration.ofSeconds(3));
-		requestFactory.setReadTimeout(Duration.ofSeconds(10));
+		requestFactory.setConnectTimeout(connectTimeoutMillis);
+		requestFactory.setReadTimeout(readTimeoutMillis);
 		return requestFactory;
 	}
 
@@ -88,6 +94,7 @@ public class GeminiClient {
 				|| System.currentTimeMillis() < unavailableUntil.get() || !requests.tryAcquire()) {
 			return Optional.empty();
 		}
+		long startedAt = System.nanoTime();
 		try {
 			Map<String, Object> body = Map.of(
 					"systemInstruction", Map.of("parts", List.of(Map.of("text", """
@@ -113,12 +120,16 @@ public class GeminiClient {
 				// 인증/할당량 오류에 자동 재시도하지 않는다. 같은 키로 두 AI 기능이 공유한다.
 				unavailableUntil.accumulateAndGet(System.currentTimeMillis() + 60_000, Math::max);
 			}
-			log.warn("Gemini 호출 실패: HTTP {}", status);
+			log.warn("Gemini 호출 실패: HTTP {} ({}ms)", status,
+					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
 			return Optional.empty();
 		}
 		catch (RestClientException e) {
 			// 예외 메시지/응답 본문에는 키와 입력이 포함될 수 있어 기록하지 않는다.
-			log.warn("Gemini 호출 실패: {}", e.getClass().getSimpleName());
+			String failure = e.contains(SocketTimeoutException.class) ? "연결 또는 읽기 시간 초과"
+					: e.getMostSpecificCause().getClass().getSimpleName();
+			log.warn("Gemini 호출 실패: {} ({}ms)", failure,
+					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
 			return Optional.empty();
 		}
 		finally {
