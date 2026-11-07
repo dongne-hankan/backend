@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -55,9 +56,30 @@ public class Course {
 	@OrderBy("sortOrder")
 	private Set<ExperienceTag> tags = new LinkedHashSet<>();
 
-	@OneToMany(mappedBy = "course")
+	@OneToMany(mappedBy = "course", cascade = CascadeType.PERSIST)
 	@OrderBy("stopOrder")
 	private List<CourseStop> stops = new ArrayList<>();
+
+	public record StopPlan(Place place, int stayMinutes, Integer moveMinutesToNext) {
+	}
+
+	public static Course generated(String key, Region region, ExperienceTag tag, String name, String intro,
+			int durationMinutes, List<StopPlan> stops) {
+		Course course = new Course();
+		course.courseKey = key;
+		course.region = region;
+		course.name = name;
+		course.intro = intro;
+		course.transport = "도보";
+		course.durationMinutes = durationMinutes;
+		course.visible = true;
+		course.tags.add(tag);
+		for (StopPlan stop : stops) {
+			course.stops.add(new CourseStop(course, stop.place(), course.stops.size() + 1,
+					stop.stayMinutes(), stop.moveMinutesToNext()));
+		}
+		return course;
+	}
 
 	public boolean hasTag(Long tagId) {
 		return tags.stream().anyMatch(tag -> tag.getId().equals(tagId));
