@@ -1,5 +1,7 @@
 package com.sixteez.dongnehankan.course.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,9 +9,7 @@ import com.sixteez.dongnehankan.course.dto.CourseDetailResponse;
 import com.sixteez.dongnehankan.course.dto.CourseDetailResponse.Me;
 import com.sixteez.dongnehankan.course.dto.CourseDetailResponse.RecordItem;
 import com.sixteez.dongnehankan.course.dto.PlaceDetailResponse;
-import com.sixteez.dongnehankan.course.entity.Course;
 import com.sixteez.dongnehankan.course.entity.Place;
-import com.sixteez.dongnehankan.course.repository.CourseRepository;
 import com.sixteez.dongnehankan.course.repository.PlaceRepository;
 import com.sixteez.dongnehankan.course.repository.ResidentStoryRepository;
 import com.sixteez.dongnehankan.global.exception.BusinessException;
@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class CourseService {
 
-	private final CourseRepository courseRepository;
+	private final GeneratedCourseDrafts generatedCourseDrafts;
 
 	private final PlaceRepository placeRepository;
 
@@ -35,9 +35,11 @@ public class CourseService {
 	private final VisitRecordRepository visitRecordRepository;
 
 	public CourseDetailResponse getCourse(Long courseId, Long userId) {
-		Course course = courseRepository.findVisibleById(courseId)
+		return generatedCourseDrafts.findVisibleCourse(courseId)
+			.map(course -> CourseDetailResponse.of(course, userId == null ? null : me(course.getId(), userId)))
+			.or(() -> generatedCourseDrafts.find(courseId)
+				.map(draft -> draft.detail(userId == null ? null : new Me(false, List.of()))))
 			.orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
-		return CourseDetailResponse.of(course, userId == null ? null : me(courseId, userId));
 	}
 
 	private Me me(Long courseId, Long userId) {

@@ -39,4 +39,12 @@ public class CourseStop {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "highlight_story_id")
 	private ResidentStory highlightStory;
+
+	CourseStop(Course course, Place place, int order, int stayMinutes, Integer moveMinutesToNext) {
+		this.course = course;
+		this.place = place;
+		this.stopOrder = order;
+		this.stayMinutes = stayMinutes;
+		this.moveMinutesToNext = moveMinutesToNext;
+	}
 }

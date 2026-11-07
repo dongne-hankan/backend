@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sixteez.dongnehankan.course.dto.CourseSummaryResponse;
 import com.sixteez.dongnehankan.course.entity.Course;
 import com.sixteez.dongnehankan.course.repository.CourseRepository;
+import com.sixteez.dongnehankan.course.service.GeneratedCourseDrafts;
 import com.sixteez.dongnehankan.global.exception.BusinessException;
 import com.sixteez.dongnehankan.global.exception.ErrorCode;
 import com.sixteez.dongnehankan.global.response.PageResponse;
@@ -45,6 +46,7 @@ public class MyService {
 	}
 
 	private final CourseRepository courseRepository;
+	private final GeneratedCourseDrafts generatedCourseDrafts;
 
 	private final SavedCourseRepository savedCourseRepository;
 
@@ -55,7 +57,7 @@ public class MyService {
 	@Transactional
 	public SaveResult saveCourse(Long userId, Long courseId) {
 		Course course = findCourse(courseId);
-		var existing = savedCourseRepository.findByUserIdAndCourseId(userId, courseId);
+		var existing = savedCourseRepository.findByUserIdAndCourseId(userId, course.getId());
 		if (existing.isPresent()) {
 			return new SaveResult(false, saveResponse(existing.get()));
 		}
@@ -67,7 +69,13 @@ public class MyService {
 
 	@Transactional
 	public void unsaveCourse(Long userId, Long courseId) {
-		savedCourseRepository.deleteByUserIdAndCourseId(userId, courseId);
+		if (courseId > 0) {
+			savedCourseRepository.deleteByUserIdAndCourseId(userId, courseId);
+		}
+		else {
+			generatedCourseDrafts.findVisibleCourse(courseId)
+				.ifPresent(course -> savedCourseRepository.deleteByUserIdAndCourseId(userId, course.getId()));
+		}
 	}
 
 	@Transactional(readOnly = true)
@@ -126,6 +134,9 @@ public class MyService {
 	}
 
 	private Course findCourse(Long courseId) {
+		if (courseId < 0) {
+			return generatedCourseDrafts.persist(courseId);
+		}
 		return courseRepository.findById(courseId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
 	}
