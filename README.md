@@ -21,7 +21,7 @@ SPRING_PROFILES_ACTIVE=default ./gradlew bootRun          # MySQL로 실행 (doc
 ```text
 src/main/java/com/sixteez/dongnehankan
 ├── global     공통 설정(config), 예외(exception), 응답 형식(response)
-├── auth       카카오 로그인, 회원가입, 토큰
+├── auth       카카오·아이디 로그인, 회원가입, 토큰
 ├── user       내 정보, 취향 설정
 ├── my         담은 코스, 느낌 기록, 나의 동네 한 칸
 ├── find       찾기 선택지, 추천
@@ -42,6 +42,19 @@ src/main/java/com/sixteez/dongnehankan
 ## DB 변경
 
 적용된 마이그레이션 파일은 고치지 않습니다. 스키마를 바꿀 때는 `V2__설명.sql`처럼 새 파일을 추가합니다. 엔티티와 스키마가 다르면 `ddl-auto: validate`가 앱 시작을 막습니다.
+
+## 자체 로그인
+
+카카오 로그인과 별도로 아이디·비밀번호로 가입하고 로그인할 수 있습니다. 이메일은 받지 않으므로 비밀번호 재설정은 없고, 로그인한 상태에서 비밀번호만 바꿀 수 있습니다.
+
+| 기능 | API |
+| --- | --- |
+| 아이디 중복 확인 | `GET /api/auth/login-id-availability?loginId=` |
+| 자체 회원가입 | `POST /api/auth/local/signup` `{ loginId, password, nickname, privacyAgreed }` |
+| 로그인 | `POST /api/auth/login` `{ loginId, password }` |
+| 비밀번호 변경 | `PATCH /api/users/me/password` `{ currentPassword, newPassword }` |
+
+아이디는 영문·숫자 4~20자이고 소문자로 바꿔 저장합니다. 비밀번호는 8~64자이며 BCrypt 해시로 저장합니다. 로그인 실패 때는 아이디와 비밀번호 중 어느 쪽이 틀렸는지 구분하지 않습니다. 비밀번호를 바꾸면 그 회원의 refresh token을 모두 폐기합니다. `GET /api/users/me`의 `loginId`는 카카오 회원이면 `null`입니다.
 
 ## 남은 일
 

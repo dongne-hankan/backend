@@ -13,6 +13,8 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -68,6 +70,11 @@ public class SecurityConfig {
 				.authenticationEntryPoint((request, response, e) -> writeError(response, authError(request)))
 				.accessDeniedHandler((request, response, e) -> writeError(response, ErrorCode.FORBIDDEN)))
 			.build();
+	}
+
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
 	}
 
 	@Bean
