@@ -19,6 +19,7 @@ public enum ErrorCode {
 	NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
 	CONDITION_REQUIRED(HttpStatus.BAD_REQUEST, "지역, 경험, 시간을 모두 골라 주세요."),
 	REGION_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 지역입니다."),
+	OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST, "대구·경북 안에서 다녀온 산책만 기록할 수 있어요."),
 	TAG_NOT_FOUND(HttpStatus.BAD_REQUEST, "없는 경험 태그입니다."),
 	COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "지금은 볼 수 없는 코스예요."),
 	PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "지금은 볼 수 없는 장소예요."),

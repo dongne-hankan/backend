@@ -135,7 +135,7 @@ public class NearbyRecommendationService {
 			Integer moveToNext = i + 1 < stops.size() ? courseBuilder.walkMinutes(place, stops.get(i + 1).place())
 					: null;
 			items.add(new StopItem(i + 1, place.name(), place.address(), place.lat(), place.lng(), stop.stayMinutes(),
-					moveToNext, stop.reason(), place.placeUrl()));
+					moveToNext, stop.reason(), place.id(), place.placeUrl()));
 		}
 		// 코스 저장 방식이 정해지기 전까지 courseId는 null이다.
 		return new CourseItem(null, name, intro, reason, courseBuilder.totalMinutes(stops), items);

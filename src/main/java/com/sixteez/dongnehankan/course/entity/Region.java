@@ -33,4 +33,14 @@ public class Region {
 	private BigDecimal centerLat;
 
 	private BigDecimal centerLng;
+
+	public static Region discovered(Province province, String name, BigDecimal centerLat, BigDecimal centerLng) {
+		Region region = new Region();
+		region.regionKey = province.name().toLowerCase() + "-" + name;
+		region.name = name;
+		region.province = province;
+		region.centerLat = centerLat;
+		region.centerLng = centerLng;
+		return region;
+	}
 }

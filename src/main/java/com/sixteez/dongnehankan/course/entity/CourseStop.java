@@ -40,11 +40,23 @@ public class CourseStop {
 	@JoinColumn(name = "highlight_story_id")
 	private ResidentStory highlightStory;
 
+	private String kakaoPlaceId;
+
+	private String kakaoPlaceUrl;
+
 	CourseStop(Course course, Place place, int order, int stayMinutes, Integer moveMinutesToNext) {
 		this.course = course;
 		this.place = place;
 		this.stopOrder = order;
 		this.stayMinutes = stayMinutes;
 		this.moveMinutesToNext = moveMinutesToNext;
+	}
+
+	static CourseStop kakao(Course course, String kakaoPlaceId, String kakaoPlaceUrl, int order, int stayMinutes,
+			Integer moveMinutesToNext) {
+		CourseStop stop = new CourseStop(course, null, order, stayMinutes, moveMinutesToNext);
+		stop.kakaoPlaceId = kakaoPlaceId;
+		stop.kakaoPlaceUrl = kakaoPlaceUrl;
+		return stop;
 	}
 }
