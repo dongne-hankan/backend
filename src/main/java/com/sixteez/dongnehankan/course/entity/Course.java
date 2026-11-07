@@ -50,6 +50,8 @@ public class Course {
 
 	private boolean visible;
 
+	private String source = SOURCE_CURATED;
+
 	@ManyToMany
 	@JoinTable(name = "course_tag", joinColumns = @JoinColumn(name = "course_id"),
 			inverseJoinColumns = @JoinColumn(name = "tag_id"))
@@ -59,6 +61,13 @@ public class Course {
 	@OneToMany(mappedBy = "course", cascade = CascadeType.PERSIST)
 	@OrderBy("stopOrder")
 	private List<CourseStop> stops = new ArrayList<>();
+
+	public static final String SOURCE_CURATED = "CURATED";
+
+	public static final String SOURCE_WALK = "WALK";
+
+	public record WalkStopPlan(String kakaoPlaceId, String kakaoPlaceUrl, int stayMinutes, Integer moveMinutesToNext) {
+	}
 
 	public record StopPlan(Place place, int stayMinutes, Integer moveMinutesToNext) {
 	}
@@ -77,6 +86,28 @@ public class Course {
 		for (StopPlan stop : stops) {
 			course.stops.add(new CourseStop(course, stop.place(), course.stops.size() + 1,
 					stop.stayMinutes(), stop.moveMinutesToNext()));
+		}
+		return course;
+	}
+
+	/**
+	 * 회원이 다녀온 지도 추천 코스다. 카카오 장소는 약관상 ID와 링크만 남기고, 추천·상세에는 나오지 않는다.
+	 */
+	public static Course walk(String key, Region region, ExperienceTag tag, String name, String intro,
+			int durationMinutes, List<WalkStopPlan> stops) {
+		Course course = new Course();
+		course.courseKey = key;
+		course.region = region;
+		course.name = name;
+		course.intro = intro;
+		course.transport = "도보";
+		course.durationMinutes = durationMinutes;
+		course.visible = false;
+		course.source = SOURCE_WALK;
+		course.tags.add(tag);
+		for (WalkStopPlan stop : stops) {
+			course.stops.add(CourseStop.kakao(course, stop.kakaoPlaceId(), stop.kakaoPlaceUrl(),
+					course.stops.size() + 1, stop.stayMinutes(), stop.moveMinutesToNext()));
 		}
 		return course;
 	}

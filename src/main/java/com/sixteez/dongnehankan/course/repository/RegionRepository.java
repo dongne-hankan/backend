@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Lock;
 
 import jakarta.persistence.LockModeType;
 
+import com.sixteez.dongnehankan.course.entity.Province;
 import com.sixteez.dongnehankan.course.entity.Region;
 
 public interface RegionRepository extends JpaRepository<Region, Long> {
@@ -19,4 +20,6 @@ public interface RegionRepository extends JpaRepository<Region, Long> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select r from Region r where r.id = :id")
 	Optional<Region> findByIdForUpdate(Long id);
+
+	Optional<Region> findByProvinceAndName(Province province, String name);
 }

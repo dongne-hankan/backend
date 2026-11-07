@@ -16,7 +16,7 @@ public record NearbyResponse(Center center, List<CourseItem> courses, boolean ai
 	}
 
 	public record StopItem(int order, String name, String address, double lat, double lng, int stayMinutes,
-			Integer moveMinutesToNext, String reason, String kakaoPlaceUrl) {
+			Integer moveMinutesToNext, String reason, String kakaoPlaceId, String kakaoPlaceUrl) {
 	}
 
 	public static NearbyResponse empty(Center center) {

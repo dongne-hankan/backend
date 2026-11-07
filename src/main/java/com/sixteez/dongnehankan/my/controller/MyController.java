@@ -25,7 +25,9 @@ import com.sixteez.dongnehankan.my.dto.SaveCourseRequest;
 import com.sixteez.dongnehankan.my.dto.SaveCourseResponse;
 import com.sixteez.dongnehankan.my.dto.SavedCourseItem;
 import com.sixteez.dongnehankan.my.dto.UpdateRecordRequest;
+import com.sixteez.dongnehankan.my.dto.WalkRecordRequest;
 import com.sixteez.dongnehankan.my.service.MyService;
+import com.sixteez.dongnehankan.my.service.WalkService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,8 @@ import lombok.RequiredArgsConstructor;
 public class MyController {
 
 	private final MyService myService;
+
+	private final WalkService walkService;
 
 	@PostMapping("/saved-courses")
 	public ResponseEntity<ApiResponse<SaveCourseResponse>> saveCourse(@AuthenticationPrincipal Long userId,
@@ -62,6 +66,13 @@ public class MyController {
 	public ApiResponse<RecordCreatedResponse> createRecord(@AuthenticationPrincipal Long userId,
 			@Valid @RequestBody CreateRecordRequest request) {
 		return ApiResponse.of(myService.createRecord(userId, request));
+	}
+
+	@PostMapping("/walks")
+	@ResponseStatus(HttpStatus.CREATED)
+	public ApiResponse<RecordCreatedResponse> recordWalk(@AuthenticationPrincipal Long userId,
+			@Valid @RequestBody WalkRecordRequest request) {
+		return ApiResponse.of(walkService.recordWalk(userId, request));
 	}
 
 	@GetMapping("/records")
