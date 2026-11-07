@@ -29,7 +29,7 @@ public class KakaoLocalClient {
 
 	private static final Logger log = LoggerFactory.getLogger(KakaoLocalClient.class);
 
-	// 음식점, 카페, 편의점, 주차장은 산책 코스에 넣지 않는다.
+	// 공원·산책로는 카테고리 코드가 없어 키워드로 찾는다. 음식점, 카페, 편의점, 주차장은 넣지 않는다.
 	private static final Set<String> EXCLUDED_GROUPS = Set.of("FD6", "CE7", "CS2", "PK6");
 
 	private static final List<String> EXCLUDED_CATEGORY_WORDS = List.of("음식점", "카페", "편의점", "주차장");
@@ -104,12 +104,14 @@ public class KakaoLocalClient {
 		try {
 			List<PlaceDocument> attractions = search("/v2/local/search/category.json", "category_group_code", "AT4",
 					lat, lng, radiusMeters);
+			List<PlaceDocument> culture = search("/v2/local/search/category.json", "category_group_code", "CT1",
+					lat, lng, radiusMeters);
 			List<PlaceDocument> parks = search("/v2/local/search/keyword.json", "query", "공원", lat, lng,
 					radiusMeters);
 			List<PlaceDocument> trails = search("/v2/local/search/keyword.json", "query", "산책로", lat, lng,
 					radiusMeters);
 			Map<String, KakaoPlace> unique = new LinkedHashMap<>();
-			Stream.of(attractions, parks, trails)
+			Stream.of(attractions, culture, parks, trails)
 				.flatMap(List::stream)
 				.filter(PlaceDocument::walkable)
 				.map(PlaceDocument::toPlace)

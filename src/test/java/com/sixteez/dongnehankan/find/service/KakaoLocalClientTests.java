@@ -77,7 +77,7 @@ class KakaoLocalClientTests {
 	}
 
 	@Test
-	void mergesAttractionsAndParksByDistance() {
+	void mergesAttractionsCultureAndParksByDistance() {
 		KakaoLocalClient client = new KakaoLocalClient(builder, "test-key", BASE_URL);
 		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/category.json")))
 			.andExpect(queryParam("category_group_code", "AT4"))
@@ -92,6 +92,16 @@ class KakaoLocalClientTests {
 					   "x":"128.6175","y":"35.8285","place_url":"http://place.map.kakao.com/1","distance":"300"},
 					  {"id":"2","place_name":"들안길","address_name":"대구 수성구 상동","road_address_name":"대구 수성구 들안로 1",
 					   "x":"128.6200","y":"35.8300","place_url":"http://place.map.kakao.com/2","distance":"900"}
+					]}
+					""", MediaType.APPLICATION_JSON));
+		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/category.json")))
+			.andExpect(queryParam("category_group_code", "CT1"))
+			.andExpect(queryParam("radius", "1500"))
+			.andRespond(withSuccess("""
+					{"documents":[
+					  {"id":"4","place_name":"수성아트피아","category_group_code":"CT1","category_name":"문화,예술 > 공연장",
+					   "address_name":"대구 수성구 무학로 180","x":"128.6400","y":"35.8400","place_url":"http://place.map.kakao.com/4",
+					   "distance":"700"}
 					]}
 					""", MediaType.APPLICATION_JSON));
 		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/keyword.json")))
@@ -110,8 +120,8 @@ class KakaoLocalClientTests {
 
 		var places = client.searchNearby(35.8581, 128.6306, 1500);
 
-		assertThat(places).extracting(KakaoLocalClient.KakaoPlace::name).containsExactly("수성못", "범어공원", "들안길");
-		assertThat(places.get(2).address()).isEqualTo("대구 수성구 들안로 1");
+		assertThat(places).extracting(KakaoLocalClient.KakaoPlace::name).containsExactly("수성못", "범어공원", "수성아트피아", "들안길");
+		assertThat(places.get(3).address()).isEqualTo("대구 수성구 들안로 1");
 		assertThat(places.get(0).address()).isEqualTo("대구 수성구 두산동");
 		assertThat(places.get(0).lat()).isEqualTo(35.8285);
 		assertThat(places.get(0).lng()).isEqualTo(128.6175);
@@ -123,6 +133,10 @@ class KakaoLocalClientTests {
 	void skipsCafesStoresAndRestaurants() {
 		KakaoLocalClient client = new KakaoLocalClient(builder, "test-key", BASE_URL);
 		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/category.json")))
+			.andExpect(queryParam("category_group_code", "AT4"))
+			.andRespond(withSuccess("{\"documents\":[]}", MediaType.APPLICATION_JSON));
+		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/category.json")))
+			.andExpect(queryParam("category_group_code", "CT1"))
 			.andRespond(withSuccess("{\"documents\":[]}", MediaType.APPLICATION_JSON));
 		server.expect(requestTo(startsWith(BASE_URL + "/v2/local/search/keyword.json")))
 			.andExpect(queryParam("query", encoded("공원")))
