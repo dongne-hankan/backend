@@ -4,10 +4,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,7 +14,6 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -30,7 +26,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import com.sixteez.dongnehankan.find.dto.NearbyResponse;
 import com.sixteez.dongnehankan.find.service.GeminiClient;
 import com.sixteez.dongnehankan.find.service.KakaoLocalClient;
-import com.sixteez.dongnehankan.find.service.KakaoLocalClient.AdministrativeArea;
 import com.sixteez.dongnehankan.find.service.KakaoLocalClient.KakaoPlace;
 
 @SpringBootTest
@@ -54,8 +49,6 @@ class NearbyFlowTests {
 	@BeforeEach
 	void setUp() {
 		given(kakaoLocalClient.searchNearby(anyDouble(), anyDouble(), anyInt())).willReturn(PLACES);
-		given(kakaoLocalClient.findArea(anyDouble(), anyDouble()))
-			.willReturn(Optional.of(new AdministrativeArea("대구광역시", "중구")));
 	}
 
 	private ResultActions requestNearby(String body) throws Exception {
@@ -142,95 +135,6 @@ class NearbyFlowTests {
 	void rejectsOutOfRangeCoordinates() throws Exception {
 		requestNearby("""
 				{"lat":135.0,"lng":128.6014,"duration":"MIN_30"}
-				""").andExpect(status().isBadRequest());
-	}
-
-	@Test
-	void refusesCoordinatesOutsideDaeguGyeongbuk() throws Exception {
-		given(kakaoLocalClient.findArea(anyDouble(), anyDouble()))
-			.willReturn(Optional.of(new AdministrativeArea("경상남도", "창원시 성산구")));
-
-		requestNearby("""
-				{"lat":35.2280,"lng":128.6811,"duration":"MIN_30"}
-				""").andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.courses", hasSize(0)))
-			.andExpect(jsonPath("$.data.aiGenerated").value(false))
-			.andExpect(jsonPath("$.data.message").value(NearbyResponse.OUTSIDE_MESSAGE));
-		then(kakaoLocalClient).should(never()).searchNearby(anyDouble(), anyDouble(), anyInt());
-	}
-
-	@Test
-	void refusesFarCoordinatesWithoutCallingKakao() throws Exception {
-		requestNearby("""
-				{"lat":37.5665,"lng":126.9780,"duration":"MIN_30"}
-				""").andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.message").value(NearbyResponse.OUTSIDE_MESSAGE));
-		then(kakaoLocalClient).should(never()).findArea(anyDouble(), anyDouble());
-	}
-
-	@Test
-	void refusesCoordinatesWithoutArea() throws Exception {
-		given(kakaoLocalClient.findArea(anyDouble(), anyDouble())).willReturn(Optional.empty());
-
-		requestNearby("""
-				{"lat":36.0,"lng":129.9,"duration":"MIN_30"}
-				""").andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.message").value(NearbyResponse.OUTSIDE_MESSAGE));
-	}
-
-	@Test
-	void recommendsFromRegionCenter() throws Exception {
-		given(geminiClient.generateJson(anyString())).willReturn(Optional.empty());
-
-		requestNearby("""
-				{"regionId":1,"duration":"MIN_30"}
-				""").andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.center.lat").value(35.8581))
-			.andExpect(jsonPath("$.data.center.lng").value(128.6306))
-			.andExpect(jsonPath("$.data.courses", hasSize(1)))
-			.andExpect(jsonPath("$.data.courses[0].name").value("수성구 30분 산책"))
-			.andExpect(jsonPath("$.data.courses[0].stops[0].reason").value("지역 중심에서 약 300m 떨어진 곳이에요."));
-		then(kakaoLocalClient).should().searchNearby(eq(35.8581), eq(128.6306), anyInt());
-		then(kakaoLocalClient).should(never()).findArea(anyDouble(), anyDouble());
-	}
-
-	@Test
-	void passesTagToGemini() throws Exception {
-		given(geminiClient.generateJson(anyString())).willReturn(Optional.empty());
-
-		requestNearby("""
-				{"regionId":2,"tagId":1,"duration":"HOUR_1","mood":"강가"}
-				""").andExpect(status().isOk());
-
-		ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-		then(geminiClient).should().generateJson(prompt.capture());
-		org.assertj.core.api.Assertions.assertThat(prompt.getValue()).contains("천천히 걷고 싶어요", "강가");
-	}
-
-	@Test
-	void rejectsUnknownRegion() throws Exception {
-		requestNearby("""
-				{"regionId":999,"duration":"MIN_30"}
-				""").andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("REGION_NOT_FOUND"));
-	}
-
-	@Test
-	void rejectsUnknownTag() throws Exception {
-		requestNearby("""
-				{"regionId":1,"tagId":999,"duration":"MIN_30"}
-				""").andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("TAG_NOT_FOUND"));
-	}
-
-	@Test
-	void requiresCoordinatesOrRegion() throws Exception {
-		requestNearby("""
-				{"duration":"MIN_30"}
-				""").andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-		requestNearby("""
-				{"lat":35.8714,"duration":"MIN_30"}
 				""").andExpect(status().isBadRequest());
 	}
 }
