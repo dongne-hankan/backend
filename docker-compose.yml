@@ -1,17 +1,15 @@
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:17
     environment:
-      MYSQL_DATABASE: dongne_hankan
-      MYSQL_USER: dongne
-      MYSQL_PASSWORD: dongne
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: dongne_hankan
+      POSTGRES_USER: dongne
+      POSTGRES_PASSWORD: dongne
       TZ: Asia/Seoul
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  mysql-data:
+  postgres-data:

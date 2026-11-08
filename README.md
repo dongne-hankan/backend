@@ -4,17 +4,29 @@
 
 ## 기술 스택
 
-Java 21 · Spring Boot 4.1 · Spring Data JPA · Spring Security · Flyway · MySQL 8 · Gradle
+Java 21 · Spring Boot 4.1 · Spring Data JPA · Spring Security · Flyway · PostgreSQL · Gradle
 
 ## 시작하기
 
 ```bash
 ./gradlew bootRun                                         # H2와 샘플 데이터로 실행 (local 프로필)
-SPRING_PROFILES_ACTIVE=default ./gradlew bootRun          # MySQL로 실행 (docker compose up -d 또는 Homebrew mysql@8.4)
+SPRING_PROFILES_ACTIVE=default ./gradlew bootRun          # PostgreSQL로 실행 (Neon 또는 docker compose up -d)
 ./gradlew test                                            # H2로 실행
 ```
 
 스키마는 앱을 켤 때 Flyway가 `src/main/resources/db/migration`을 적용해 만듭니다. `db/dev`의 샘플 데이터는 local·test 프로필에만 들어가며, 주민 이야기는 가상 예시이고 좌표는 확인되지 않은 값입니다. 실행 전에 `.env.example`을 `.env`로 복사해 값을 채우세요. `.env`는 앱을 켤 때 자동으로 읽습니다.
+
+## DB 연결 (Neon)
+
+운영·공유 DB는 PostgreSQL(Neon)을 씁니다. Neon 콘솔의 접속 정보를 `.env`에 아래 형식으로 넣고 `SPRING_PROFILES_ACTIVE=default ./gradlew bootRun`으로 실행하면 Flyway가 스키마를 만듭니다.
+
+```properties
+DB_URL=jdbc:postgresql://ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+DB_USERNAME=neondb_owner
+DB_PASSWORD=...
+```
+
+호스트는 `-pooler`가 없는 direct 주소를 씁니다. 샘플 데이터(`db/dev`)는 들어가지 않고 local·test 프로필에서만 적용됩니다.
 
 ## 폴더 구조
 

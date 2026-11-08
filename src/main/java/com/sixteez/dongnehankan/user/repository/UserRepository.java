@@ -21,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	@Query(value = "select count(*) from visit_record where user_id = :userId", nativeQuery = true)
 	long countRecords(Long userId);
 
-	@Query(value = "select count(*) from user_preference where user_id = :userId and onboarding_completed = 1",
+	@Query(value = "select count(*) from user_preference where user_id = :userId and onboarding_completed = true",
 			nativeQuery = true)
 	long countCompletedOnboarding(Long userId);
 }

@@ -36,7 +36,7 @@ import com.sixteez.dongnehankan.user.repository.UserRepository;
 
 @SpringBootTest(properties = {
 		"FIND_FRESH_AI_ENABLED=true",
-		"spring.datasource.url=jdbc:h2:mem:fresh_courses;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+		"spring.datasource.url=jdbc:h2:mem:fresh_courses;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
