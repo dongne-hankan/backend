@@ -88,7 +88,9 @@ class WalkFlowTests {
 		walk(2, "GOOD").andExpect(status().isCreated());
 
 		authed(get("/api/my/neighborhood"))
-			.andExpect(jsonPath("$.data.grid.regions[?(@.name == '중구')]").isNotEmpty())
+			.andExpect(jsonPath("$.data.grid.regions", hasSize(1)))
+			.andExpect(jsonPath("$.data.grid.regions[0].name").value("중구"))
+			.andExpect(jsonPath("$.data.grid.visitedRegionCount").value(1))
 			.andExpect(jsonPath("$.data.grid.filledCellCount").value(1));
 	}
 

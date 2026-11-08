@@ -94,8 +94,7 @@ public class MyService {
 		}
 		Course course = findCourse(request.courseId());
 		validateVisitedOn(request.visitedOn());
-		int filledBefore = neighborhoodCalculator.grid(visitRecordRepository.findAllWithCourse(userId))
-			.filledCellCount();
+		Grid gridBefore = neighborhoodCalculator.grid(visitRecordRepository.findAllWithCourse(userId));
 
 		LocalDate visitedOn = request.visitedOn() == null ? LocalDate.now(SEOUL) : request.visitedOn();
 		String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo();
@@ -104,7 +103,8 @@ public class MyService {
 
 		Grid grid = neighborhoodCalculator.grid(visitRecordRepository.findAllWithCourse(userId));
 		return new RecordCreatedResponse(RecordResponse.from(record), new NeighborhoodProgress(grid.filledCellCount(),
-				grid.totalCellCount(), grid.filledCellCount() > filledBefore));
+				grid.totalCellCount(), grid.filledCellCount() > gridBefore.filledCellCount(),
+				grid.visitedRegionCount(), grid.visitedRegionCount() > gridBefore.visitedRegionCount()));
 	}
 
 	@Transactional(readOnly = true)

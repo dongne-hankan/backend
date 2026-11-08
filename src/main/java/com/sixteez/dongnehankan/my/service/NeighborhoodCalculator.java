@@ -10,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import com.sixteez.dongnehankan.course.entity.ExperienceTag;
 import com.sixteez.dongnehankan.course.entity.Region;
 import com.sixteez.dongnehankan.course.repository.ExperienceTagRepository;
-import com.sixteez.dongnehankan.course.repository.RegionRepository;
 import com.sixteez.dongnehankan.my.dto.NeighborhoodResponse;
 import com.sixteez.dongnehankan.my.dto.NeighborhoodResponse.Cell;
 import com.sixteez.dongnehankan.my.dto.NeighborhoodResponse.Grid;
@@ -32,12 +30,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class NeighborhoodCalculator {
 
-	private final RegionRepository regionRepository;
-
 	private final ExperienceTagRepository experienceTagRepository;
 
 	Grid grid(List<VisitRecord> records) {
-		List<Region> regions = regionRepository.findAll(Sort.by("id"));
+		// 다녀온 동네만 최근에 다녀온 순서로 보여준다. 기록이 없으면 격자도 비어 있다.
+		List<Region> regions = records.stream().map(record -> record.getCourse().getRegion()).distinct().toList();
 		List<ExperienceTag> tags = experienceTagRepository.findAllByOrderBySortOrder();
 
 		List<Cell> cells = new ArrayList<>();
@@ -49,7 +46,7 @@ class NeighborhoodCalculator {
 		int filled = (int) cells.stream().filter(Cell::filled).count();
 		return new Grid(regions.stream().map(region -> new RegionItem(region.getId(), region.getName())).toList(),
 				tags.stream().map(tag -> new TagItem(tag.getId(), tag.getName())).toList(), cells, filled,
-				cells.size());
+				cells.size(), regions.size());
 	}
 
 	Summary summary(List<VisitRecord> records, long savedCourseCount) {
