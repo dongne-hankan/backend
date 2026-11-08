@@ -6,10 +6,7 @@ INSERT INTO region (region_id, region_key, name, province, center_lat, center_ln
     (2, 'andong', '안동시', 'GYEONGBUK', 36.5684000, 128.7294000),
     (3, 'gyeongju', '경주시', 'GYEONGBUK', 35.8562000, 129.2247000);
 
-INSERT INTO experience_tag (tag_id, tag_key, name, phrase, icon, sort_order) VALUES
-    (1, 'slow-walk', '천천히 걷기', '천천히 걷고 싶어요', 'walk', 1),
-    (2, 'rest', '혼자 쉬기', '혼자 쉬고 싶어요', 'rest', 2),
-    (3, 'explore', '동네 알아가기', '동네를 알아가고 싶어요', 'explore', 3);
+-- 경험 태그는 V4__base_experience_tags.sql에서 넣는다.
 
 INSERT INTO place (place_id, place_key, name, address, lat, lng, checked_on, time_sensitive, source_url, visible) VALUES
     (101, 'suseong-lake', '수성못', '대구 수성구 두산동', 35.8272000, 128.6175000, '2026-11-01', 0, 'https://www.mmj.suseong.kr/pages/sub.htm?nav_code=new1708668244', 1),
