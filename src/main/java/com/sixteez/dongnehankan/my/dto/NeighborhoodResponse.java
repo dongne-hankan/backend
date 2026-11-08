@@ -18,7 +18,7 @@ public record NeighborhoodResponse(Grid grid, Summary summary) {
 	}
 
 	public record Grid(List<RegionItem> regions, List<TagItem> tags, List<Cell> cells, int filledCellCount,
-			int totalCellCount) {
+			int totalCellCount, int visitedRegionCount) {
 	}
 
 	public record Summary(int recordCount, long savedCourseCount, Map<Feeling, Long> feelingCounts, TagItem topTag,

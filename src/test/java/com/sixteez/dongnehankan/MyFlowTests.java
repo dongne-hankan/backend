@@ -96,14 +96,19 @@ class MyFlowTests {
 			.andExpect(jsonPath("$.data.record.feeling").value("WANT_AGAIN"))
 			.andExpect(jsonPath("$.data.record.course.visible").value(true))
 			.andExpect(jsonPath("$.data.neighborhood.filledCellCount").value(2))
-			.andExpect(jsonPath("$.data.neighborhood.totalCellCount").value(9))
+			.andExpect(jsonPath("$.data.neighborhood.totalCellCount").value(3))
+			.andExpect(jsonPath("$.data.neighborhood.visitedRegionCount").value(1))
+			.andExpect(jsonPath("$.data.neighborhood.newRegion").value(true))
 			.andExpect(jsonPath("$.data.neighborhood.newlyFilled").value(true));
 
 		record("{\"courseId\":1,\"feeling\":\"GOOD\"}").andExpect(status().isCreated())
-			.andExpect(jsonPath("$.data.neighborhood.newlyFilled").value(false));
+			.andExpect(jsonPath("$.data.neighborhood.newlyFilled").value(false))
+			.andExpect(jsonPath("$.data.neighborhood.newRegion").value(false));
 
 		authed(get("/api/my/neighborhood")).andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.grid.cells", hasSize(9)))
+			.andExpect(jsonPath("$.data.grid.regions", hasSize(1)))
+			.andExpect(jsonPath("$.data.grid.regions[0].name").value("수성구"))
+			.andExpect(jsonPath("$.data.grid.cells", hasSize(3)))
 			.andExpect(jsonPath("$.data.grid.filledCellCount").value(2))
 			.andExpect(jsonPath("$.data.summary.recordCount").value(2))
 			.andExpect(jsonPath("$.data.summary.feelingCounts.WANT_AGAIN").value(1))
@@ -117,6 +122,8 @@ class MyFlowTests {
 	@Test
 	void emptyNeighborhoodHasNoTopTag() throws Exception {
 		authed(get("/api/my/neighborhood")).andExpect(jsonPath("$.data.grid.filledCellCount").value(0))
+			.andExpect(jsonPath("$.data.grid.regions", hasSize(0)))
+			.andExpect(jsonPath("$.data.grid.visitedRegionCount").value(0))
 			.andExpect(jsonPath("$.data.summary.topTag").isEmpty());
 	}
 
