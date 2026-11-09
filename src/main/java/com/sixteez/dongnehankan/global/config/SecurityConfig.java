@@ -52,7 +52,7 @@ public class SecurityConfig {
 			.formLogin(AbstractHttpConfigurer::disable)
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth.requestMatchers("/actuator/health")
+			.authorizeHttpRequests(auth -> auth.requestMatchers("/actuator/health", "/actuator/health/liveness")
 				.permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/auth/logout")
 				.authenticated()

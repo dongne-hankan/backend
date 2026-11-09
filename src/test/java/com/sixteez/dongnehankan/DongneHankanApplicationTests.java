@@ -28,6 +28,13 @@ class DongneHankanApplicationTests {
 	}
 
 	@Test
+	void livenessIsPublicForUptimeMonitors() throws Exception {
+		mockMvc.perform(get("/actuator/health/liveness"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("UP"));
+	}
+
+	@Test
 	void unknownPublicPathReturnsNotFound() throws Exception {
 		mockMvc.perform(get("/api/find/unknown"))
 			.andExpect(status().isNotFound())
